@@ -54,20 +54,24 @@ def _csv_to_dict(csv_name: str) -> dict[int, dict[str, Any]]:
     csv_name: The csv file to load.
     """
     current_values = defaultdict(lambda: {})
-    with open(csv_name, "r") as f:
-        csv_reader = csv.DictReader(f)
-        try:
-            fieldnames = csv_reader.fieldnames
-            if fieldnames is not None:
-                current_values = defaultdict(lambda: {k: None for k in fieldnames})
-                # Convert rows of dicts with day key to mapping from days to other vars
-                # e.g. [{'day': 1, 'var': 3}] -> {1: {'var': 3}}
-                for row in csv_reader:
-                    day = int(row["day"])
-                    current_values[day] = {k: v for k, v in row.items() if k != "day"}
-        except io.UnsupportedOperation:
-            # occurs when CSV is empty
-            pass
+    try:
+        with open(csv_name, "r") as f:
+            csv_reader = csv.DictReader(f)
+            try:
+                fieldnames = csv_reader.fieldnames
+                if fieldnames is not None:
+                    current_values = defaultdict(lambda: {k: None for k in fieldnames})
+                    # Convert rows of dicts with day key to mapping from days to other vars
+                    # e.g. [{'day': 1, 'var': 3}] -> {1: {'var': 3}}
+                    for row in csv_reader:
+                        day = int(row["day"])
+                        current_values[day] = {k: v for k, v in row.items() if k != "day"}
+            except io.UnsupportedOperation:
+                # occurs when CSV is empty
+                pass
+    except FileNotFoundError:
+        # occurs when CSV is missing
+        pass
 
     return current_values
 
