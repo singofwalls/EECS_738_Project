@@ -1,23 +1,16 @@
 from collections import defaultdict
+from typing import Any
+from datetime import datetime, timedelta
+
 import csv
-from email.policy import default
 import io
 
 import netCDF4 as nc
 import numpy as np
 
-from typing import Any, Sequence
-from pathlib import Path
-
 from alive_progress import alive_it
 
-
-DATA_DIR = Path(r"C:\Users\mathe\Documents\Globus Downloads\\")
-# dir_name, var_name, day_offset, max_values
-VARIABLES = (
-    ("sea-ice", "siconc", -50*365),
-    ("atmos-near-surface-air-temp", "tas", 0),
-)
+from globus_setup import *
 
 
 def _nc_to_var(dir_name: str, var_name: str, day_offset: int = 0, max_values: int = None) -> dict[int, float]:
@@ -28,15 +21,16 @@ def _nc_to_var(dir_name: str, var_name: str, day_offset: int = 0, max_values: in
     dir_name: The sub-directory within DATA_DIR containing the .nc files to process.
     var_name: The target variable from which to retrieve each day's value.
     day_offset: The difference in days between 1900/01/01 and the .nc files' start date.
-        (1850/01/01 is -365*50, for instance)
     max_values: Cap the number of values read in at this number if given.
     """
     values = {}
     for file_name in (DATA_DIR / dir_name).iterdir():
         ds = nc.Dataset(file_name)
-        days = [int(x) for x in ds.variables["time"]]  # TODO[reece]: Instead of list/dict building, perhaps just zip the tuples directly
+        # TODO[reece]: Instead of list/dict building, perhaps just zip the tuples directly
+        days = [int(x) for x in ds.variables["time"]]
         means = [np.mean(x) for x in ds.variables[var_name]]
         for i, day in enumerate(days):
+            # TODO[reece]: This takes the last measurement of a given day for higher-frequency datasets, probably should average instead
             values[day + day_offset] = means[i]
             if max_values and len(values) > max_values:
                 break
@@ -107,17 +101,25 @@ def _var_to_csv(csv_name: str, var_name: str, variable: dict[int, Any], var_disp
             csv_writer.writerow({'day': day, **other_vars})
 
 
-def process_var(csv_name: str, dir_name: str, var_name: str, day_offset: int = 0, max_values: int = None):
+def day_delta(start_date: str, end_date: str):
+    """Return the number of days between two dates."""
+    start = datetime.strptime(start_date, "%Y/%m/%d")
+    end = datetime.strptime(end_date, "%Y/%m/%d")
+    return (end - start).days
+
+
+def process_var(csv_name: str, dir_name: str, var_name: str, start_date: str = DATE_BASELINE, max_values: int = None):
     """
     Get variable values from .nc file and place in .csv.
 
     csv_name: The csv file to create or update.
     dir_name: The sub-directory within DATA_DIR containing the .nc files to process.
     var_name: The target variable from which to retrieve each day's value.
-    day_offset: The difference in days between 1900/01/01 and the .nc files' start date.
-        (1850/01/01 is -365*50, for instance)
+    start_date: The date (formatted %Y/%m/%d) baseline for the day offset.
     max_values: Cap the number of values read in at this number if given.
     """
+
+    day_offset = day_delta(DATE_BASELINE, start_date)
     var_values = _nc_to_var(dir_name, var_name, day_offset, max_values)
     _var_to_csv(csv_name, var_name, var_values, dir_name)
 
