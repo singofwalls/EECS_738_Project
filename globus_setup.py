@@ -14,9 +14,12 @@ VARIABLES = (
     # ("solar-vars", "tsi", False, "1850/01/01", "2015/01/01"),
     # ("solar-vars", "ap", False, "1850/01/01", "2015/01/01"),
     # ("solar-vars", "kp", False, "1850/01/01", "2015/01/01"),
-    ("solar-vars", "scnum", False, "1850/01/01", "2015/01/01"),
-    ("solar-vars", "scph", False, "1850/01/01", "2015/01/01"),
-    ("solar-vars", "ssn", False, "1850/01/01", "2015/01/01"),
+    # ("solar-vars", "scnum", False, "1850/01/01", "2015/01/01"),
+    # ("solar-vars", "scph", False, "1850/01/01", "2015/01/01"),
+    # ("solar-vars", "ssn", False, "1850/01/01", "2015/01/01"),
+    # ("solar-vars", "iprp", True, "1850/01/01", "2015/01/01"),
+    # ("solar-vars", "iprg", True, "1850/01/01", "2015/01/01"),
+    # ("solar-vars", "iprm", True, "1850/01/01", "2015/01/01"),
 )
 
 CSV_NAME = "values.csv"

@@ -13,7 +13,7 @@ from globus_setup import *
 
 
 all_dirs = [f for f in DATA_DIR.iterdir() if f.is_dir()]
-target_dirs = [DATA_DIR / Path(x) for x in ("solar-vars", )]
+target_dirs = [DATA_DIR / Path(x) for x in ("atmos-near-surface-air-temp", )]
 
 
 def get_metadata():
@@ -25,7 +25,7 @@ def get_metadata():
         print()
         print(directory_name)
         # print("\n".join([f"{x}, {ds.variables[x].long_name}" for x in ds.variables]))
-        return ds.variables["scph"][:100]
+        return ds.variables["time"]
 
 
 def date_range():
