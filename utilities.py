@@ -40,6 +40,42 @@ def date_range():
             print(days[:10])
 
 
+def sort_csv_by_days():
+    """Put all the rows in order by day."""
+    rows = []
+    with open(CSV_NAME, "r") as f:
+        csv_reader = csv.DictReader(f)
+        rows = sorted(csv_reader, key=lambda r: r["day"])
+
+    csv_fields = set(rows[0].keys())
+    with open(CSV_NAME, "w", newline='') as f:
+        csv_writer = csv.DictWriter(f, csv_fields)
+        csv_writer.writeheader()
+        csv_writer.writerows(rows)
+
+
+def reorder_csv_cols():
+    """Put the day column first in the CSV and the atmos-near-surface-air-temp last."""
+    
+    rows = []
+    with open(CSV_NAME, "r") as f:
+        csv_reader = csv.DictReader(f)
+        rows = list(csv_reader)
+
+    csv_fields = set(rows[0].keys())
+    if "atmos-near-surface-air-temp" in csv_fields:
+        field_names = csv_fields - {"day", "atmos-near-surface-air-temp"}
+        field_names = ("day",) + tuple(field_names) + ("atmos-near-surface-air-temp",)
+    else:
+        field_names = csv_fields - {"day"}
+        field_names = ("day",) + tuple(field_names)
+
+    with open(CSV_NAME, "w", newline='') as f:
+        csv_writer = csv.DictWriter(f, field_names)
+        csv_writer.writeheader()
+        csv_writer.writerows(rows)
+
+
 def remove_column_from_csv():
     """Delete select columns from the csv."""
     delete_cols = ["sea-ice", "atmos-near-surface-air-temp"]
@@ -82,7 +118,7 @@ def remove_blank_days_from_csv():
 
 def get_date_from_offset():
     """Print the date corresponding to the given day offset."""
-    DAY_OFFSET = 164358.5
+    DAY_OFFSET = 17531
 
     start = datetime.strptime(DATE_BASELINE, "%Y/%m/%d")
     end = start + timedelta(days=DAY_OFFSET)
@@ -90,4 +126,4 @@ def get_date_from_offset():
 
 
 if __name__ == "__main__":
-    remove_blank_days_from_csv()
+    get_date_from_offset()
