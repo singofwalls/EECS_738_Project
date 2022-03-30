@@ -12,6 +12,7 @@ import numpy as np
 from alive_progress import alive_it
 
 from globus_setup import *
+from utilities import reorder_csv_cols, sort_csv_by_days
 
 
 def _nc_to_var(dir_name: str, var_name: str, gridded: bool, day_offset: int = 0, end_offset: Optional[int] = None, max_values: Optional[int] = None) -> dict[int, float]:
@@ -148,3 +149,6 @@ def process_var(csv_name: str, dir_name: str, var_name: str, gridded: bool, star
 if __name__ == "__main__":
     for var in alive_it(VARIABLES):
         process_var(CSV_NAME, *var)
+
+    sort_csv_by_days()
+    reorder_csv_cols()

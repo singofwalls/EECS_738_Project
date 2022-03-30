@@ -25,7 +25,7 @@ def get_metadata():
         print()
         print(directory_name)
         # print("\n".join([f"{x}, {ds.variables[x].long_name}" for x in ds.variables]))
-        return ds.variables["f107"]
+        return ds.variables["scph"][:100]
 
 
 def date_range():
@@ -126,4 +126,6 @@ def get_date_from_offset(day_offset=DAY_OFFSET, baseline=DATE_BASELINE):
 
 
 if __name__ == "__main__":
-    get_date_from_offset()
+    print(get_metadata())
+    # sort_csv_by_days()
+    # reorder_csv_cols()
