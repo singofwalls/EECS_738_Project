@@ -23,5 +23,13 @@ Datasets in use:
 **Publisher:** Earth System Grid Federation  
 **Publication Year:** 2020  
 **License:** Creative Commons Attribution-ShareAlike 4.0 International License (CC BY-SA 4.0)  
+  
+**Data Citation** ([Landing Page](http://cera-www.dkrz.de/WDCC/meta/CMIP6/input4MIPs.CMIP6.CMIP.SOLARIS-HEPPA.SOLARIS-HEPPA-3-2.atmos.day.multiple.gz.20170103))  
+**Identifier DOI:** http://doi.org/10.22033/ESGF/input4MIPs.1122  
+**Creators:** Matthes, Katja; Funke, Bernd; Kruschke, Tim et al.  
+**Title:** input4MIPs.SOLARIS-HEPPA.solar.CMIP.SOLARIS-HEPPA-3-2  
+**Publisher:** Earth System Grid Federation  
+**Publication Year:** 2017  
+**License:** Creative Commons Attribution-ShareAlike 4.0 International License (CC BY-SA 4.0)  
 
 We acknowledge the World Climate Research Programme, which, through its Working Group on Coupled Modelling, coordinated and promoted CMIP6. We thank the climate modeling groups for producing and making available their model output, the Earth System Grid Federation (ESGF) for archiving the data and providing access, and the multiple funding agencies who support CMIP6 and ESGF.

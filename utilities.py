@@ -25,7 +25,7 @@ def get_metadata():
         print()
         print(directory_name)
         # print("\n".join([f"{x}, {ds.variables[x].long_name}" for x in ds.variables]))
-        print(ds.variables["time"][-1])
+        return ds.variables["f107"]
 
 
 def date_range():
@@ -55,7 +55,7 @@ def sort_csv_by_days():
 
 
 def reorder_csv_cols():
-    """Put the day column first in the CSV and the atmos-near-surface-air-temp last."""
+    """Put the day column first in the CSV and the tas field last."""
     
     rows = []
     with open(CSV_NAME, "r") as f:
@@ -63,9 +63,9 @@ def reorder_csv_cols():
         rows = list(csv_reader)
 
     csv_fields = set(rows[0].keys())
-    if "atmos-near-surface-air-temp" in csv_fields:
-        field_names = csv_fields - {"day", "atmos-near-surface-air-temp"}
-        field_names = ("day",) + tuple(field_names) + ("atmos-near-surface-air-temp",)
+    if "tas" in csv_fields:
+        field_names = csv_fields - {"day", "tas"}
+        field_names = ("day",) + tuple(field_names) + ("tas",)
     else:
         field_names = csv_fields - {"day"}
         field_names = ("day",) + tuple(field_names)
@@ -78,7 +78,7 @@ def reorder_csv_cols():
 
 def remove_column_from_csv():
     """Delete select columns from the csv."""
-    delete_cols = ["sea-ice", "atmos-near-surface-air-temp"]
+    delete_cols = ["siconc", "tas"]
 
     if input("Are you sure you want to delete these columns? " + str(delete_cols)).lower() != "y":
         return
@@ -116,14 +116,14 @@ def remove_blank_days_from_csv():
         csv_writer.writerows(rows)
 
 
-def get_date_from_offset():
+DAY_OFFSET = 60265
+def get_date_from_offset(day_offset=DAY_OFFSET, baseline=DATE_BASELINE):
     """Print the date corresponding to the given day offset."""
-    DAY_OFFSET = 17531
 
-    start = datetime.strptime(DATE_BASELINE, "%Y/%m/%d")
-    end = start + timedelta(days=DAY_OFFSET)
+    start = datetime.strptime(baseline, "%Y/%m/%d")
+    end = start + timedelta(days=day_offset)
     print(end.strftime("%Y/%m/%d"))
 
 
 if __name__ == "__main__":
-    get_date_from_offset()
+    get_date_from_offset(baseline="1850/01/01")
