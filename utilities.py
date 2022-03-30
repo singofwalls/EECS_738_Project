@@ -12,32 +12,39 @@ from datetime import datetime, timedelta
 from globus_setup import *
 
 
-all_dirs = [f for f in DATA_DIR.iterdir() if f.is_dir()]
-target_dirs = [DATA_DIR / Path(x) for x in ("atmos-near-surface-air-temp", )]
+target_dirs = [f for f in DATA_DIR.iterdir() if f.is_dir()]
+# target_dirs = [DATA_DIR / Path(x) for x in ("specific-humidity", )]
 
 
-def get_metadata():
-    """Print various metadata from the .nc files in the target_dirs."""
+def get_date_range():
+    """Print the start and end dates for the datasets."""
     for directory_name in target_dirs:
-        first_file = os.listdir(directory_name)[0]
-        ds = nc.Dataset(directory_name / first_file)
+        start_baseline = "1900/01/01"
+        end_cutoff = None
+        for var in VARIABLES:
+            if var.dir_name == directory_name.name:
+                start_baseline = var.start_date
+                if var.end_date is not None:
+                    end_cutoff = (datetime.strptime(var.end_date, "%Y/%m/%d") - timedelta(days=1)).strftime("%Y/%m/%d")
+
+        files = sorted(os.listdir(directory_name))
+        first_file = files[0]
+        last_file = files[-1]
+        ds1 = nc.Dataset(directory_name / first_file)
+        ds2 = nc.Dataset(directory_name / last_file)
 
         print()
         print(directory_name)
-        # print("\n".join([f"{x}, {ds.variables[x].long_name}" for x in ds.variables]))
-        return ds.variables["time"]
+        start = float(ds1.variables["time"][0])
+        end = float(ds2.variables["time"][-1])
 
+        start_date = get_date_from_offset(start, start_baseline)
+        end_date = get_date_from_offset(end, start_baseline)
 
-def date_range():
-    """Print the first several days in each .nc file in the target_dirs."""
-    for directory_name in target_dirs:
-        for file_name in directory_name.iterdir():
-            ds = nc.Dataset(directory_name / file_name)
-            days = ds.variables["time"]
-
-            print()
-            print(directory_name)
-            print(days[:10])
+        if end_cutoff is not None:
+            print(start_date, "to", end_cutoff, "with future predictions to", end_date)
+        else:
+            print(start_date, "to", end_date)
 
 
 def sort_csv_by_days():
@@ -116,16 +123,17 @@ def remove_blank_days_from_csv():
         csv_writer.writerows(rows)
 
 
-DAY_OFFSET = 21184
+DAY_OFFSET = 21548.875
 def get_date_from_offset(day_offset=DAY_OFFSET, baseline=DATE_BASELINE):
     """Print the date corresponding to the given day offset."""
 
     start = datetime.strptime(baseline, "%Y/%m/%d")
     end = start + timedelta(days=day_offset)
-    print(end.strftime("%Y/%m/%d"))
+    return end.strftime("%Y/%m/%d")
 
 
 if __name__ == "__main__":
-    print(get_metadata())
+    get_date_range()
+    # get_date_from_offset()
     # sort_csv_by_days()
     # reorder_csv_cols()
