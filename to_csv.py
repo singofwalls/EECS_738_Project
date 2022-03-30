@@ -134,4 +134,4 @@ def process_var(csv_name: str, dir_name: str, var_name: str, start_date: str = D
 
 if __name__ == "__main__":
     for var in alive_it(VARIABLES):
-        process_var("values.csv", *var)
+        process_var(CSV_NAME, *var)
