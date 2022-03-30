@@ -1,6 +1,7 @@
 from collections import defaultdict
+from itertools import groupby
 from typing import Any
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import csv
 import io
@@ -26,12 +27,18 @@ def _nc_to_var(dir_name: str, var_name: str, day_offset: int = 0, max_values: in
     values = {}
     for file_name in (DATA_DIR / dir_name).iterdir():
         ds = nc.Dataset(file_name)
-        # TODO[reece]: Instead of list/dict building, perhaps just zip the tuples directly
-        days = [int(x) for x in ds.variables["time"]]
+
+        # Get a list of time_steps and the mean value for that day
+        time_steps = ds.variables["time"]
         means = [np.mean(x) for x in ds.variables[var_name]]
-        for i, day in enumerate(days):
-            # TODO[reece]: This takes the last measurement of a given day for higher-frequency datasets, probably should average instead
-            values[day + day_offset] = means[i]
+        records = zip(time_steps, means)
+
+        # iterate the records in groups of days
+        # TODO[reece]: Include end date after which to crop data (for future predictions we don't care about)
+        for day, records in groupby(records, lambda r: int(r[0])):
+            # Get a mean value for each day from all the records from that day
+            values[day + day_offset] = np.mean([r[1] for r in records])
+
             if max_values and len(values) > max_values:
                 break
         if max_values is not None and len(values) > max_values:
@@ -85,7 +92,7 @@ def _var_to_csv(csv_name: str, var_name: str, variable: dict[int, Any], var_disp
 
     # Load current values for each day from the csv
     day_values = _csv_to_dict(csv_name)
-    
+
     # Add new values to current values
     for day in variable:
         day_values[day][var_display_name] = variable[day]
@@ -119,6 +126,7 @@ def process_var(csv_name: str, dir_name: str, var_name: str, start_date: str = D
     max_values: Cap the number of values read in at this number if given.
     """
 
+    # TODO[reece]: Get metadata for files from .nc file directly instead of hardcoding
     day_offset = day_delta(DATE_BASELINE, start_date)
     var_values = _nc_to_var(dir_name, var_name, day_offset, max_values)
     _var_to_csv(csv_name, var_name, var_values, dir_name)
