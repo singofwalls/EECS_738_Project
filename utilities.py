@@ -21,15 +21,24 @@ target_dirs = [DATA_DIR / Path(x) for x in ("atmos", )]
 
 
 def plot_temps():
+    """Plot temperature trend."""
+
     with open(CSV_NAME, "r") as f:
         csv_reader = csv.DictReader(f)
         rows = sorted(csv_reader, key=lambda r: float(r["day"]))
-        y = [r["tas"] for r in rows]
-        x = [get_date_from_offset(int(r["day"])) for r in rows]
+        y = np.array([float(r["tas"]) for r in rows])
+        x = np.array([int(get_date_from_offset(int(r["day"]), output_format="%Y")) for r in rows])
     
-    plt.plot(x, y, 'r-')
-    plt.show()
+    plt.scatter(x, y, s=1, alpha=.3)
 
+    z = np.polyfit(x, y, 1)
+    p = np.poly1d(z)
+    plt.plot(x,p(x),"r--")
+    
+    plt.title("Global Average Surface Temperature Trend")
+    plt.ylabel("Global Average Surface Temp K")
+    plt.xlabel("Year")
+    plt.show()
 
 
 def get_dates(days=None):
