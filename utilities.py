@@ -1,10 +1,14 @@
 """Various utility functions for manipulating the data."""
 
+from collections import defaultdict
 import os
 import csv
 
 import netCDF4 as nc
 import numpy as np
+import pandas as pd
+
+import matplotlib.pyplot as plt
 
 from pathlib import Path
 from datetime import datetime, timedelta
@@ -12,8 +16,36 @@ from datetime import datetime, timedelta
 from globus_setup import *
 
 
-target_dirs = [f for f in DATA_DIR.iterdir() if f.is_dir()]
-# target_dirs = [DATA_DIR / Path(x) for x in ("specific-humidity", )]
+# target_dirs = [f for f in DATA_DIR.iterdir() if f.is_dir()]
+target_dirs = [DATA_DIR / Path(x) for x in ("atmos", )]
+
+
+def plot_temps():
+    with open(CSV_NAME, "r") as f:
+        csv_reader = csv.DictReader(f)
+        rows = sorted(csv_reader, key=lambda r: float(r["day"]))
+        y = [r["tas"] for r in rows]
+        x = [get_date_from_offset(int(r["day"])) for r in rows]
+    
+    plt.plot(x, y, 'r-')
+    plt.show()
+
+
+
+def get_dates(days=None):
+    """Convert days to dates."""
+    dates = []
+    if days is None:
+        days = []
+        with open(CSV_NAME, "r") as f:
+            csv_reader = csv.DictReader(f)
+            rows = sorted(csv_reader, key=lambda r: float(r["day"]))
+            for r in rows:
+                days.append(int(r["day"]))
+
+    for day in days:
+        dates.append(get_date_from_offset(day))
+    return np.array(dates)
 
 
 def get_date_range():
@@ -123,17 +155,74 @@ def remove_blank_days_from_csv():
         csv_writer.writerows(rows)
 
 
-DAY_OFFSET = 21548.875
-def get_date_from_offset(day_offset=DAY_OFFSET, baseline=DATE_BASELINE):
+def remove_incomlete_days_from_csv():
+    """Remove days from CSV which have one or more missing values."""
+    if input("Are you sure you want to delete incomplete days?").lower() != "y":
+        return
+
+    rows = []
+    with open(CSV_NAME, "r") as f:
+        csv_reader = csv.DictReader(f)
+        for row in csv_reader:
+            empty_fields = [f for f in row if row[f] == ""]
+            if not empty_fields:
+                rows.append(row)
+    
+    field_names = tuple(rows[0].keys())
+    with open(CSV_NAME, "w", newline='') as f:
+        csv_writer = csv.DictWriter(f, field_names)
+        csv_writer.writeheader()
+        csv_writer.writerows(rows)
+
+
+def normalize_values_in_csv():
+    """Normalize all columns to a range of 0 through 1."""
+
+    remove_incomlete_days_from_csv()
+    if input("Are you sure you want to normalize the csv?").lower() != "y":
+        return
+
+    cols = defaultdict(list)
+    with open(CSV_NAME, "r") as f:
+        csv_reader = csv.DictReader(f)
+        for row in csv_reader:
+            for field_name in row:
+                cols[field_name].append(row[field_name])
+
+    for field_name, data in cols.items():
+        if field_name == "day":
+            continue
+        data = np.array([float(d) for d in data])
+        max_ = np.max(data)
+        min_ = np.min(data)
+
+        normalized = (data - min_) / (max_ - min_)
+        cols[field_name] = normalized
+
+    rows = []
+    num_rows = len(tuple(cols.values())[0])
+    # Put day first and tas last
+    field_names = ("day", ) + tuple(set(cols.keys()) - {"day", "tas"}) + ("tas", )
+    for i in range(num_rows):
+        rows.append({k: cols[k][i] for k in field_names})
+
+    with open(CSV_NAME, "w", newline='') as f:
+        csv_writer = csv.DictWriter(f, field_names)
+        csv_writer.writeheader()
+        csv_writer.writerows(rows)
+
+
+DAY_OFFSET = 42002
+def get_date_from_offset(day_offset=DAY_OFFSET, baseline=DATE_BASELINE, output_format="%Y/%m/%d"):
     """Print the date corresponding to the given day offset."""
 
     start = datetime.strptime(baseline, "%Y/%m/%d")
     end = start + timedelta(days=day_offset)
-    return end.strftime("%Y/%m/%d")
+    return end.strftime(output_format)
 
 
 if __name__ == "__main__":
-    get_date_range()
+    plot_temps()
     # get_date_from_offset()
     # sort_csv_by_days()
     # reorder_csv_cols()
