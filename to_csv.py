@@ -1,6 +1,6 @@
 from collections import defaultdict
 from itertools import groupby
-from typing import Any
+from typing import Any, Optional
 from datetime import datetime
 
 import csv
@@ -14,14 +14,16 @@ from alive_progress import alive_it
 from globus_setup import *
 
 
-def _nc_to_var(dir_name: str, var_name: str, day_offset: int = 0, max_values: int = None) -> dict[int, float]:
+def _nc_to_var(dir_name: str, var_name: str, gridded: bool, day_offset: int = 0, end_offset: Optional[int] = None, max_values: Optional[int] = None) -> dict[int, float]:
     """
     Convert a directory of .nc dataset files to a dict by averaging the grid cells at 
     each time step.
 
     dir_name: The sub-directory within DATA_DIR containing the .nc files to process.
     var_name: The target variable from which to retrieve each day's value.
-    day_offset: The difference in days between 1900/01/01 and the .nc files' start date.
+    gridded: Whether variable values are gridded into lat/lon data.
+    day_offset: The difference in days between DATE_BASELINE and the .nc files' start date.
+    end_offset: Days after end_offset (num days since start_date) are cropped (e.g. to exclude future predictions).
     max_values: Cap the number of values read in at this number if given.
     """
     values = {}
@@ -30,12 +32,21 @@ def _nc_to_var(dir_name: str, var_name: str, day_offset: int = 0, max_values: in
 
         # Get a list of time_steps and the mean value for that day
         time_steps = ds.variables["time"]
-        means = [np.mean(x) for x in ds.variables[var_name]]
+
+        if gridded:
+            # Average across grids
+            means = (np.mean(x) for x in ds.variables[var_name])
+        else:
+            means = tuple(ds.variables[var_name])
         records = zip(time_steps, means)
 
         # iterate the records in groups of days
-        # TODO[reece]: Include end date after which to crop data (for future predictions we don't care about)
         for day, records in groupby(records, lambda r: int(r[0])):
+
+            # Skip dates after end_offset when present
+            if end_offset is not None and day >= end_offset:
+                continue  # May be safe to break instead if data is ordered
+
             # Get a mean value for each day from all the records from that day
             values[day + day_offset] = np.mean([r[1] for r in records])
 
@@ -85,7 +96,7 @@ def _var_to_csv(csv_name: str, var_name: str, variable: dict[int, Any], var_disp
     csv_name: The csv file to create or update.
     var_name: The target variable from which to retrieve each day's value.
     variable: A mapping from day numbers to the value for the given day.
-    var_display_name: How to name the variable in the csv file for humans to read.
+    var_display_name: How to name the variable in the csv file.
     """
     if var_display_name is None:
         var_display_name = var_name
@@ -115,21 +126,23 @@ def day_delta(start_date: str, end_date: str):
     return (end - start).days
 
 
-def process_var(csv_name: str, dir_name: str, var_name: str, start_date: str = DATE_BASELINE, max_values: int = None):
+def process_var(csv_name: str, dir_name: str, var_name: str, gridded: bool, start_date: str = DATE_BASELINE, end_date: Optional[str] = None, max_values: Optional[int] = None):
     """
     Get variable values from .nc file and place in .csv.
 
     csv_name: The csv file to create or update.
     dir_name: The sub-directory within DATA_DIR containing the .nc files to process.
     var_name: The target variable from which to retrieve each day's value.
+    gridded: Whether variable values are gridded into lat/lon data.
     start_date: The date (formatted %Y/%m/%d) baseline for the day offset.
     max_values: Cap the number of values read in at this number if given.
     """
 
     # TODO[reece]: Get metadata for files from .nc file directly instead of hardcoding
     day_offset = day_delta(DATE_BASELINE, start_date)
-    var_values = _nc_to_var(dir_name, var_name, day_offset, max_values)
-    _var_to_csv(csv_name, var_name, var_values, dir_name)
+    end_offset = day_delta(start_date, end_date) if end_date else None
+    var_values = _nc_to_var(dir_name, var_name, gridded, day_offset, end_offset, max_values)
+    _var_to_csv(csv_name, var_name, var_values, var_name)
 
 
 if __name__ == "__main__":

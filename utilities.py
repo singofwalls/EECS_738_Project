@@ -45,7 +45,7 @@ def sort_csv_by_days():
     rows = []
     with open(CSV_NAME, "r") as f:
         csv_reader = csv.DictReader(f)
-        rows = sorted(csv_reader, key=lambda r: r["day"])
+        rows = sorted(csv_reader, key=lambda r: float(r["day"]))
 
     csv_fields = set(rows[0].keys())
     with open(CSV_NAME, "w", newline='') as f:
@@ -116,7 +116,7 @@ def remove_blank_days_from_csv():
         csv_writer.writerows(rows)
 
 
-DAY_OFFSET = 60265
+DAY_OFFSET = 21184
 def get_date_from_offset(day_offset=DAY_OFFSET, baseline=DATE_BASELINE):
     """Print the date corresponding to the given day offset."""
 
@@ -126,4 +126,4 @@ def get_date_from_offset(day_offset=DAY_OFFSET, baseline=DATE_BASELINE):
 
 
 if __name__ == "__main__":
-    get_date_from_offset(baseline="1850/01/01")
+    get_date_from_offset()
