@@ -22,22 +22,13 @@ target_dirs = [DATA_DIR / Path(x) for x in ("atmos", )]
 
 
 def plot_temps():
+    """Plot a surface temp trend line."""
     with open(CSV_NAME, "r") as f:
         csv_reader = csv.DictReader(f)
         rows = sorted(csv_reader, key=lambda r: float(r["day"]))
         y = np.array([float(r["tas"]) for r in rows])
         x = np.array([int(r["day"]) for r in rows])
     
-    # Get max and min temps for display of non-normalized values
-    with open("values_complete.csv", "r") as f:
-        csv_reader = csv.DictReader(f)
-        min_temp = math.inf
-        max_temp = -math.inf
-        for row in csv_reader:
-            if (t := float(row["tas"])) > max_temp:
-                max_temp = t
-            if (t := float(row["tas"])) < min_temp:
-                min_temp = t
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -46,7 +37,7 @@ def plot_temps():
     xyears = np.array([int(get_date_from_offset(int(r), output_format="%Y")) for r in x])
     xticks = np.arange(0, len(x), step=365*7)
     yticks = np.arange(np.min(y), np.max(y), step=0.1)
-    ytemps = [round(yt * (max_temp - min_temp) + min_temp, 2) for yt in yticks]
+    ytemps = [round(unnormalize(yt), 2) for yt in yticks]
     plt.xticks(x[xticks], xyears[xticks])
     plt.yticks(yticks, ytemps)
 
@@ -244,13 +235,33 @@ def normalize_values_in_csv():
         csv_writer.writerows(rows)
 
 
-DAY_OFFSET = 42002
+DAY_OFFSET = 38878
 def get_date_from_offset(day_offset=DAY_OFFSET, baseline=DATE_BASELINE, output_format="%Y/%m/%d"):
     """Print the date corresponding to the given day offset."""
 
     start = datetime.strptime(baseline, "%Y/%m/%d")
     end = start + timedelta(days=day_offset)
     return end.strftime(output_format)
+
+
+def unnormalize(normed: float):
+    """Unnormalize temperature data using the max and min values from the tas column."""
+
+    # Get max and min temps for display of non-normalized values
+    try:
+        unnormalize.min_temp
+    except AttributeError:
+        with open("values_complete.csv", "r") as f:
+            csv_reader = csv.DictReader(f)
+            unnormalize.min_temp = math.inf
+            unnormalize.max_temp = -math.inf
+            for row in csv_reader:
+                if (t := float(row["tas"])) > unnormalize.max_temp:
+                    unnormalize.max_temp = t
+                if (t := float(row["tas"])) < unnormalize.min_temp:
+                    unnormalize.min_temp = t
+    
+    return normed * (unnormalize.max_temp - unnormalize.min_temp) + unnormalize.min_temp
 
 
 if __name__ == "__main__":
