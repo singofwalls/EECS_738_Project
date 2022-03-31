@@ -21,27 +21,34 @@ target_dirs = [DATA_DIR / Path(x) for x in ("atmos", )]
 
 
 def plot_temps():
-    """Plot temperature trend."""
-
     with open(CSV_NAME, "r") as f:
         csv_reader = csv.DictReader(f)
         rows = sorted(csv_reader, key=lambda r: float(r["day"]))
         y = np.array([float(r["tas"]) for r in rows])
-        x = np.array([int(get_date_from_offset(int(r["day"]), output_format="%Y")) for r in rows])
+        x = np.array([int(r["day"]) for r in rows])
     
-    plt.scatter(x, y, s=1, alpha=.3)
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
+    ax.scatter(x, y, s=3, alpha=.1)
+    xyears = np.array([int(get_date_from_offset(int(r), output_format="%Y")) for r in x])
+    ticks = np.arange(0, len(x), step=365*10)
+    plt.xticks(x[ticks], xyears[ticks])
 
     z = np.polyfit(x, y, 1)
     p = np.poly1d(z)
-    plt.plot(x,p(x),"r--")
+    ax.plot(x,p(x),"r--")
     
     plt.title("Global Average Surface Temperature Trend")
     plt.ylabel("Global Average Surface Temp K")
     plt.xlabel("Year")
-    plt.show()
+    fig.canvas.draw()
+    fig.canvas.flush_events()
+
+    return fig, ax
 
 
-def get_dates(days=None):
+def get_dates(days=None, output_format=None):
     """Convert days to dates."""
     dates = []
     if days is None:
@@ -53,7 +60,7 @@ def get_dates(days=None):
                 days.append(int(r["day"]))
 
     for day in days:
-        dates.append(get_date_from_offset(day))
+        dates.append(get_date_from_offset(day, output_format=output_format))
     return np.array(dates)
 
 
@@ -66,6 +73,7 @@ def get_date_range():
             if var.dir_name == directory_name.name:
                 start_baseline = var.start_date
                 if var.end_date is not None:
+                    # Substract one day from end_date for inclusive end date
                     end_cutoff = (datetime.strptime(var.end_date, "%Y/%m/%d") - timedelta(days=1)).strftime("%Y/%m/%d")
 
         files = sorted(os.listdir(directory_name))
