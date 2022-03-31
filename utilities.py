@@ -3,6 +3,7 @@
 from collections import defaultdict
 import os
 import csv
+import math
 
 import netCDF4 as nc
 import numpy as np
@@ -27,13 +28,27 @@ def plot_temps():
         y = np.array([float(r["tas"]) for r in rows])
         x = np.array([int(r["day"]) for r in rows])
     
+    # Get max and min temps for display of non-normalized values
+    with open("values_complete.csv", "r") as f:
+        csv_reader = csv.DictReader(f)
+        min_temp = math.inf
+        max_temp = -math.inf
+        for row in csv_reader:
+            if (t := float(row["tas"])) > max_temp:
+                max_temp = t
+            if (t := float(row["tas"])) < min_temp:
+                min_temp = t
+
     fig = plt.figure()
     ax = fig.add_subplot(111)
 
     ax.scatter(x, y, s=3, alpha=.1)
     xyears = np.array([int(get_date_from_offset(int(r), output_format="%Y")) for r in x])
-    ticks = np.arange(0, len(x), step=365*10)
-    plt.xticks(x[ticks], xyears[ticks])
+    xticks = np.arange(0, len(x), step=365*7)
+    yticks = np.arange(np.min(y), np.max(y), step=0.1)
+    ytemps = [round(yt * (max_temp - min_temp) + min_temp, 2) for yt in yticks]
+    plt.xticks(x[xticks], xyears[xticks])
+    plt.yticks(yticks, ytemps)
 
     z = np.polyfit(x, y, 1)
     p = np.poly1d(z)
@@ -240,6 +255,7 @@ def get_date_from_offset(day_offset=DAY_OFFSET, baseline=DATE_BASELINE, output_f
 
 if __name__ == "__main__":
     plot_temps()
+    plt.show()
     # get_date_from_offset()
     # sort_csv_by_days()
     # reorder_csv_cols()
