@@ -3,7 +3,7 @@ import pickle
 
 from sklearn.neural_network import MLPRegressor
 from sklearn.metrics import r2_score, explained_variance_score, mean_squared_error
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.model_selection import KFold
 
 import numpy as np
@@ -16,7 +16,7 @@ MODEL_NAME = "model.p"
 LOAD_MODEL = None
 KFOLD = None
 HYPERPARAMS = {
-    "hidden_layer_size": [20] * 10,
+    "hidden_layer_sizes": [np.array(range(num_nodes, min_nodes, -node_step)) * num_layers for num_layers in range(1, 10) for num_nodes in range(1, 100, 10) for min_nodes in range(1, 10) for node_step in range(1, 10)],
 }
 
 
@@ -76,8 +76,8 @@ def load_model():
 
 
 def train_net(X_train, y_train):
-    clf = MLPRegressor(verbose=True, hidden_layer_sizes=HYPERPARAMS["hidden_layer_size"], tol=1e-10)
-    clf.fit(X_train, y_train)
+    clf = MLPRegressor(verbose=True, hidden_layer_sizes=HYPERPARAMS["hidden_layer_sizes"], tol=.1)
+    # clf.fit(X_train, y_train)
     return clf
 
 
@@ -86,20 +86,19 @@ def get_data():
         raise RuntimeError("Must regen model to do cross validation -- cannot LOAD_MODEL")
 
     if LOAD_MODEL:
-        return load_model()
+        yield load_model()[1:]
+        return
 
     X, y = read_data()
     if not KFOLD:
-        return strip_days(*split_data(X, y))
+        yield X, y, *strip_days(*split_data(X, y))
+        return
 
     for fold_num, (train_ind, test_ind) in enumerate(cross_val(X, y)):
         X_train, X_test, y_train, y_test = X[train_ind], X[test_ind], y[train_ind], y[test_ind]
         X_train, X_test, y_train, y_test, days_train, days_test = strip_days(X_train, X_test, y_train, y_test)
 
-        clf = train_net(X_train, y_train)
-        save_model(f"model k{fold_num}.p", clf, X, y, X_train, X_test, y_train, y_test, days_train, days_test)
-    
-        yield clf, X, y, X_train, X_test, y_train, y_test, days_train, days_test
+        yield X, y, X_train, X_test, y_train, y_test, days_train, days_test
 
 
 def predict(clf, X_test, y_test):
@@ -139,7 +138,13 @@ def plot(y_test, days_test, y_pred):
 
 if __name__ == "__main__":
     LOAD_MODEL = False
-    KFOLD = True
-    for clf, X, y, X_train, X_test, y_train, y_test, days_train, days_test in get_data():
-        y_pred = predict(clf, X_test, y_test)
-        plot(y_test, days_test, y_pred)
+    KFOLD = False
+    for X, y, X_train, X_test, y_train, y_test, days_train, days_test in get_data():
+        clf = train_net(X_train, y_train)
+        save_model("model.p", clf, X, y, X_train, X_test, y_train, y_test, days_train, days_test)
+        search = RandomizedSearchCV(estimator=clf, param_distributions=HYPERPARAMS)
+        search.fit(X_train, y_train)
+        print(search.best_params_)
+
+        # y_pred = predict(clf, X_test, y_test)
+        # plot(y_test, days_test, y_pred)
