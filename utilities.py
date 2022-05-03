@@ -270,4 +270,5 @@ if __name__ == "__main__":
     # get_date_from_offset()
     # sort_csv_by_days()
     # reorder_csv_cols()
-    print(unnormalize(0.0428010541005815) - unnormalize.min_temp)
+    # print(unnormalize(0.005644718293559814**.5) - unnormalize.min_temp)
+    print(get_date_from_offset(42367))

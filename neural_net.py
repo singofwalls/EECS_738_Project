@@ -16,7 +16,14 @@ MODEL_NAME = "model.p"
 LOAD_MODEL = None
 KFOLD = None
 HYPERPARAMS = {
-    "hidden_layer_sizes": [np.array(range(num_nodes, min_nodes, -node_step)) * num_layers for num_layers in range(1, 10) for num_nodes in range(1, 100, 10) for min_nodes in range(1, 10) for node_step in range(1, 10)],
+    "hidden_layer_sizes": [
+        np.array(range(num_nodes, min_nodes, -node_step)) * num_layers
+        for num_layers in range(1, 10)
+        for num_nodes in range(1, 100, 10)
+        for min_nodes in range(1, 10)
+        for node_step in range(1, 10)
+    ],
+    "hidden_layer_sizes": [405, 365, 325, 285, 245, 205, 165, 125, 85, 45],
 }
 
 
@@ -45,23 +52,31 @@ def cross_val(X, y):
     kf = KFold(n_splits=5, shuffle=False).split(X, y)
     return kf
 
+
 def split_data(X, y):
     """Simple split into train and test sets. No cross-validation."""
     ## Split data
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, shuffle=True)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.33, shuffle=False
+    )
     return X_train, X_test, y_train, y_test
+
 
 def strip_days(X_train, X_test, y_train, y_test):
     """Separate out the days variable into its own arrays.
-    
+
     Called after splitting X and y into X_train, X_test, y_train, y_test.
     """
     y_train = np.array(y_train, dtype=np.double)
     y_test = np.array(y_test, dtype=np.double)
     days_test = np.array([row["day"] for row in X_test], dtype=np.double)
     days_train = np.array([row["day"] for row in X_train], dtype=np.double)
-    X_train = np.array([[v for k, v in row.items() if k != "day"] for row in X_train], dtype=np.double)
-    X_test = np.array([[v for k, v in row.items() if k != "day"] for row in X_test], dtype=np.double)
+    X_train = np.array(
+        [[v for k, v in row.items() if k != "day"] for row in X_train], dtype=np.double
+    )
+    X_test = np.array(
+        [[v for k, v in row.items() if k != "day"] for row in X_test], dtype=np.double
+    )
     return X_train, X_test, y_train, y_test, days_train, days_test
 
 
@@ -70,20 +85,25 @@ def save_model(name, *args):
     with open(name, "wb") as f:
         pickle.dump(args, f)
 
+
 def load_model():
     with open(MODEL_NAME, "rb") as f:
         return pickle.load(f)
 
 
 def train_net(X_train, y_train):
-    clf = MLPRegressor(verbose=True, hidden_layer_sizes=HYPERPARAMS["hidden_layer_sizes"], tol=.1)
-    # clf.fit(X_train, y_train)
+    clf = MLPRegressor(
+        verbose=True, hidden_layer_sizes=HYPERPARAMS["hidden_layer_sizes"], tol=1e-10
+    )
+    clf.fit(X_train, y_train)
     return clf
 
 
 def get_data():
     if LOAD_MODEL and KFOLD:
-        raise RuntimeError("Must regen model to do cross validation -- cannot LOAD_MODEL")
+        raise RuntimeError(
+            "Must regen model to do cross validation -- cannot LOAD_MODEL"
+        )
 
     if LOAD_MODEL:
         yield load_model()[1:]
@@ -95,8 +115,15 @@ def get_data():
         return
 
     for fold_num, (train_ind, test_ind) in enumerate(cross_val(X, y)):
-        X_train, X_test, y_train, y_test = X[train_ind], X[test_ind], y[train_ind], y[test_ind]
-        X_train, X_test, y_train, y_test, days_train, days_test = strip_days(X_train, X_test, y_train, y_test)
+        X_train, X_test, y_train, y_test = (
+            X[train_ind],
+            X[test_ind],
+            y[train_ind],
+            y[test_ind],
+        )
+        X_train, X_test, y_train, y_test, days_train, days_test = strip_days(
+            X_train, X_test, y_train, y_test
+        )
 
         yield X, y, X_train, X_test, y_train, y_test, days_train, days_test
 
@@ -113,9 +140,11 @@ def plot(y_test, days_test, y_pred):
     fig = plt.figure()
     ax = fig.add_subplot(111)
 
-    ax.scatter(days_test, y_test, c='#1f77b4', s=3, alpha=.1, label='Actual')
-    xyears = np.array([int(get_date_from_offset(int(r), output_format="%Y")) for r in days_test])
-    xticks = np.arange(0, len(days_test), step=365*3)
+    ax.scatter(days_test, y_test, c="#1f77b4", s=3, alpha=0.1, label="Actual")
+    xyears = np.array(
+        [int(get_date_from_offset(int(r), output_format="%Y")) for r in days_test]
+    )
+    xticks = np.arange(0, len(days_test), step=365 * 3)
     yticks = np.arange(np.min(y_test), np.max(y_test), step=0.1)
     ytemps = [round(unnormalize(yt), 2) for yt in yticks]
     plt.xticks(np.sort(days_test)[xticks], xyears[xticks])
@@ -126,8 +155,8 @@ def plot(y_test, days_test, y_pred):
     # p = np.poly1d(z)
     # ax.plot(days_test,p(days_test),"r--")
 
-    ax.scatter(days_test, y_pred, s=3, alpha=.1, c='#ff7f0e', label='Predicted')
-    ax.legend(labelcolor=('#1f77b4', '#ff7f0e'))
+    ax.scatter(days_test, y_pred, s=3, alpha=0.1, c="#ff7f0e", label="Predicted")
+    ax.legend(labelcolor=("#1f77b4", "#ff7f0e"))
 
     plt.title("Global Average Surface Temperature")
     plt.ylabel("Global Average Surface Temp K")
@@ -141,10 +170,21 @@ if __name__ == "__main__":
     KFOLD = False
     for X, y, X_train, X_test, y_train, y_test, days_train, days_test in get_data():
         clf = train_net(X_train, y_train)
-        save_model("model.p", clf, X, y, X_train, X_test, y_train, y_test, days_train, days_test)
-        search = RandomizedSearchCV(estimator=clf, param_distributions=HYPERPARAMS)
-        search.fit(X_train, y_train)
-        print(search.best_params_)
+        save_model(
+            "model.p",
+            clf,
+            X,
+            y,
+            X_train,
+            X_test,
+            y_train,
+            y_test,
+            days_train,
+            days_test,
+        )
+        # search = RandomizedSearchCV(estimator=clf, param_distributions=HYPERPARAMS)
+        # search.fit(X_train, y_train)
+        # print(search.best_params_)
 
-        # y_pred = predict(clf, X_test, y_test)
-        # plot(y_test, days_test, y_pred)
+        y_pred = predict(clf, X_test, y_test)
+        plot(y_test, days_test, y_pred)
