@@ -24,4 +24,4 @@ VARIABLES = (
     # Variable("solar-vars", "iprm", True, "1850/01/01", "2015/01/01", None),
 )
 
-CSV_NAME = "values_normalized.csv"
+# CSV_NAME = "values_normalized.csv"
