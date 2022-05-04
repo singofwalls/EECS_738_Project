@@ -265,8 +265,9 @@ def unnormalize(normed: float):
 
 
 if __name__ == "__main__":
-    plot_temps()
-    plt.show()
+    # plot_temps()
+    # plt.show()
     # get_date_from_offset()
     # sort_csv_by_days()
     # reorder_csv_cols()
+    print(unnormalize(0.18816822748278353) - unnormalize.min_temp)
