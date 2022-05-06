@@ -54,6 +54,45 @@ def plot_temps():
     return fig, ax
 
 
+def plot_temps_by_month():
+    """Plot average temp by month."""
+    with open(CSV_NAME, "r") as f:
+        csv_reader = csv.DictReader(f)
+        rows = sorted(csv_reader, key=lambda r: float(r["day"]))
+        y = np.array([float(r["tas"]) for r in rows])
+        x = np.array([int(r["day"]) for r in rows])
+    
+    months = np.array([int(get_date_from_offset(int(r), output_format="%m")) for r in x])
+    monthly_temps = {month: [] for month in np.unique(months)}
+    for temp, month in zip(y, months):
+        monthly_temps[month].append(temp)
+
+    xmonths = sorted(monthly_temps.keys())
+    avg_temps = np.array([np.mean(monthly_temps[month]) for month in xmonths])
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
+    ax.scatter(xmonths, avg_temps, s=3, alpha=.1)
+    # xticks = np.arange(0, len(x), step=365*7)
+    # yticks = np.arange(np.min(y), np.max(y), step=0.1)
+    # ytemps = [round(unnormalize(yt), 2) for yt in yticks]
+    # plt.xticks(x[xticks], xyears[xticks])
+    # plt.yticks(yticks, ytemps)
+
+    # z = np.polyfit(x, y, 1)
+    # p = np.poly1d(z)
+    # ax.plot(x,p(x),"r--")
+    
+    plt.title("Average Global Average Surface Temperature By Month")
+    plt.ylabel("Average Global Average Surface Temp K")
+    plt.xlabel("Month")
+    fig.canvas.draw()
+    fig.canvas.flush_events()
+
+    return fig, ax
+
+
 def get_dates(days=None, output_format=None):
     """Convert days to dates."""
     dates = []
@@ -270,4 +309,6 @@ if __name__ == "__main__":
     # get_date_from_offset()
     # sort_csv_by_days()
     # reorder_csv_cols()
-    print(unnormalize(0.18816822748278353) - unnormalize.min_temp)
+    # print(unnormalize(70))
+    plt, ax = plot_temps_by_month()
+    plt.show()
