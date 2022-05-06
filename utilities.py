@@ -68,12 +68,12 @@ def plot_temps_by_month():
         monthly_temps[month].append(temp)
 
     xmonths = sorted(monthly_temps.keys())
-    avg_temps = np.array([np.mean(monthly_temps[month]) for month in xmonths])
+    avg_temps = np.array([unnormalize(np.mean(monthly_temps[month])) for month in xmonths])
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
 
-    ax.scatter(xmonths, avg_temps, s=3, alpha=.1)
+    ax.scatter(xmonths, avg_temps)
     # xticks = np.arange(0, len(x), step=365*7)
     # yticks = np.arange(np.min(y), np.max(y), step=0.1)
     # ytemps = [round(unnormalize(yt), 2) for yt in yticks]
@@ -312,3 +312,4 @@ if __name__ == "__main__":
     # print(unnormalize(70))
     plt, ax = plot_temps_by_month()
     plt.show()
+    input()
