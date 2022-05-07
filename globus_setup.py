@@ -1,3 +1,5 @@
+"""Various constants for processing data from Globus downloads from input4MIPS."""
+
 from collections import namedtuple
 from pathlib import Path
 

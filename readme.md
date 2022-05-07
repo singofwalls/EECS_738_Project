@@ -1,4 +1,17 @@
-Datasets in use:
+CSVs:  
+**values_all.csv**: initial inputs before normalization or intersection of features.  
+**values_complete.csv**: all inputs before normalization but after intersection performed to keep only rows with an entry for every feature.  
+**values_normalized.csv**: all inputs after intersection and normalization.  
+**new_data.csv**: remaining inputs after cleaning and pruning of high-correlation features.   
+
+**References**
+Link to article where the single-step, one input feature LSTM model builder was obtained: 
+https://towardsdatascience.com/energy-consumption-time-series-forecasting-with-python-and-lstm-deep-learning-model-7952e2f9a796  
+Link to article where the multi-step, multiple input feature LSTM model builder was obtained:  
+https://towardsdatascience.com/single-and-multi-step-temperature-time-series-forecasting-for-vilnius-using-lstm-deep-learning-b9719a0009de  
+
+
+Datasets in use:  
 
 **Data Citation** ([Landing Page](http://cera-www.dkrz.de/WDCC/meta/CMIP6/input4MIPs.CMIP6.HighResMIP.MOHC.MOHC-HadISST-2-2-0-0-0.seaIce.day.siconc.gn.20170505))  
 **Identifier DOI:** http://doi.org/10.22033/ESGF/input4MIPs.1221  

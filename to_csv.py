@@ -1,3 +1,5 @@
+"""Functions for converting .nc files from input4MIPS to csv files for use in training."""
+
 from collections import defaultdict
 from itertools import groupby
 from typing import Any, Optional
